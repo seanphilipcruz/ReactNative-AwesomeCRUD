@@ -1,11 +1,10 @@
-import {ScrollView, Text, StyleSheet, Dimensions, Alert, View} from "react-native";
+import { ScrollView, StyleSheet, Dimensions, Alert, View } from "react-native";
 import {Button, HelperText, TextInput, TouchableRipple} from "react-native-paper";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect, useState } from "react";
-import { fetchUser, updateUser } from "../../store/users/reducers";
-import { fetchDesignations } from "../../store/designations/reducers";
+import React, { useEffect, useState } from "react";
+import { fetchUsers, updateUser } from "../../store/users/reducers";
 import DropDown from "react-native-paper-dropdown";
-import {validateUserForm} from "../../store/constants";
+import { validateUserForm } from "../../store/constants";
 
 const device = Dimensions.get("screen");
 
@@ -13,14 +12,15 @@ const EditUser = ({ navigation, route }) => {
     const dispatch = useDispatch();
     const { id } = route.params;
 
-    const { user, loading, error } = useSelector((state) => state.users);
+    const { user, loading, error, status, message } = useSelector((state) => state.users);
     const { designations } = useSelector((state) => state.designations);
     const [ designationList, setDesignationList] = useState([]);
-    const [ designation, setDesignation ] = useState("");
-    const [isDropdownActive, setDropdown] = useState(false);
+    const [ designation, setDesignation ] = useState('');
+    const [ isDropdownActive, setDropdown ] = useState(false);
     const [ isFormValid, setFormValidity ] = useState(false);
     const [ errors, setErrors ] = useState({});
     const [ form, setForm ] = useState({
+        id: '',
         name: '',
         mobile_number: '',
         email: '',
@@ -28,20 +28,18 @@ const EditUser = ({ navigation, route }) => {
     });
 
     useEffect(() => {
-        dispatch(fetchUser(id));
+        syncFormWithUserData();
 
-        syncFormWithData();
-    }, [id]);
+        setNavigationOptions();
+    }, [id, user]);
 
     useEffect(() => {
-        setNavigationOptions();
-
         setDesignationList(list());
 
         setFormDesignation();
 
         validateUserForm(form, setErrors, setFormValidity);
-    }, [navigation, form.name, form.email, form.mobile_number, form.designation_id]);
+    }, [form.name, form.email, form.mobile_number, form.designation_id, designation]);
 
     const setNavigationOptions = () => {
         navigation.setOptions({
@@ -50,11 +48,19 @@ const EditUser = ({ navigation, route }) => {
         });
     }
 
-    const syncFormWithData = () => {
-        setForm({
+    const syncFormWithUserData = () => {
+        // Set form data values
+        const userData = user;
+
+        setDesignation(userData.designation_id);
+
+        setForm(form => ({
             ...form,
-            user
-        });
+            id: id,
+            name: userData.name,
+            mobile_number: userData.mobile_number,
+            email: userData.email
+        }));
     }
 
     const setFormDesignation = () => {
@@ -62,18 +68,6 @@ const EditUser = ({ navigation, route }) => {
             ...form,
             designation_id: designation
         });
-    }
-
-    const updateUserDetails = async () => {
-        const response = await dispatch(updateUser(id, form));
-
-        try {
-            const { status, message } = response.data;
-
-            navigation.navigate("Home");
-        } catch (error) {
-
-        }
     }
 
     const handleSubmit = () => {
@@ -87,12 +81,36 @@ const EditUser = ({ navigation, route }) => {
                 {
                     text: 'Yes',
                     onPress: () => {
-
+                        dispatch(updateUser(form));
                     }
                 }
             ]);
+            
+            setTimeout(() => {
+                updateUserDetails();
+            }, 1500);
         } else {
-            Alert.alert("The form has been successfully validated and has Errors");
+            Alert.alert("Error on submitting the form", "The errors must be solved prior to saving the changes");
+        }
+    }
+
+    const updateUserDetails = () => {
+        try {
+            console.info("Status / Message: ", [status, message]);
+
+            dispatch(fetchUsers());
+
+            if (status !== "success") {
+                Alert.alert('Error Occurred', 'An error has occurred while updating the user.');
+            } else {
+                Alert.alert('The user has been updated!', message);
+            }
+
+            navigation.navigate("Home");
+        } catch (error) {
+            navigation.navigate("Home");
+
+            Alert.alert("Error Occurred", error.message);
         }
     }
 
@@ -115,15 +133,16 @@ const EditUser = ({ navigation, route }) => {
             <View style={styles.textInput}>
                 <TextInput
                     mode="outlined"
-                    disabled={loading || error !== null}
+                    disabled={loading}
                     label="Full Name"
                     placeholder="Ex. Juan Dela A. Cruz Jr."
+                    name="name"
                     value={form.name}
                     onChangeText={e => {
                         setForm({
                             ...form,
                             name: e
-                        });
+                        })
                     }} />
                 <HelperText type="error" visible={errors.hasOwnProperty('name')}>
                     { errors.name }
@@ -133,15 +152,16 @@ const EditUser = ({ navigation, route }) => {
             <View style={styles.textInput}>
                 <TextInput
                     mode="outlined"
-                    disabled={loading || error !== null}
+                    disabled={loading}
                     label="Mobile Number"
-                    placeholder="+63 915 428 3142"
+                    placeholder="09154283142"
+                    name="mobile_number"
                     value={form.mobile_number}
                     onChangeText={e => {
                         setForm({
                             ...form,
                             mobile_number: e
-                        });
+                        })
                     }} />
                 <HelperText type="error" visible={errors.hasOwnProperty('mobile_number')}>
                     { errors.mobile_number }
@@ -151,15 +171,16 @@ const EditUser = ({ navigation, route }) => {
             <View style={styles.textInput}>
                 <TextInput
                     mode="outlined"
-                    disabled={loading || error !== null}
+                    disabled={loading}
                     label="Email"
                     placeholder="juandelacruzjr@gmail.com"
+                    name="email"
                     value={form.email}
                     onChangeText={e => {
                         setForm({
                             ...form,
                             email: e
-                        });
+                        })
                     }} />
                 <HelperText type="error" visible={errors.hasOwnProperty('email')}>
                     { errors.email }

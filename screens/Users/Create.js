@@ -4,6 +4,7 @@ import { useDispatch, useSelector} from "react-redux";
 import { useEffect, useState } from "react";
 import DropDown from "react-native-paper-dropdown";
 import {validateUserForm} from "../../store/constants";
+import {storeUser} from "../../store/users/reducers";
 
 const device = Dimensions.get("screen");
 
@@ -11,6 +12,7 @@ const device = Dimensions.get("screen");
 
 const CreateUser = ({ navigation }) => {
     const dispatch = useDispatch();
+    const { status, message } = useSelector((state) => state.users);
     const { designations } = useSelector((state) => state.designations);
     const [ designationList, setDesignationList ] = useState([]);
     const [ designation, setDesignation ] = useState("");
@@ -28,9 +30,11 @@ const CreateUser = ({ navigation }) => {
         setDesignationList(list());
 
         setFormDesignation();
+    }, [designation]);
 
+    useEffect(() => {
         validateUserForm(form, setErrors, setFormValidity);
-    }, [designation, form.name, form.designation_id, form.mobile_number, form.email]);
+    }, [form.name, form.designation_id, form.mobile_number, form.email])
 
     const setFormDesignation = () => {
         setForm({
@@ -41,9 +45,29 @@ const CreateUser = ({ navigation }) => {
 
     const handleSubmit = () => {
         if (isFormValid) {
-            Alert.alert("The form has been successfully validated");
+            dispatch(storeUser(form));
+
+            setTimeout(() => {
+                storeUserDetails();
+            }, 1500);
         } else {
-            Alert.alert("The form has been successfully validated and has Errors");
+            Alert.alert("Error on submitting the form", "The errors must be solved prior to saving the changes");
+        }
+    }
+
+    const storeUserDetails = () => {
+        try {
+            navigation.navigate("Home");
+
+            if (status !== "success") {
+                Alert.alert('Error Occurred', 'An error has occurred while updating the user.');
+            } else {
+                Alert.alert('The user has been saved!', message);
+            }
+        } catch (error) {
+            navigation.navigate("Home");
+
+            Alert.alert("Error Occurred", error.message);
         }
     }
 
@@ -84,7 +108,7 @@ const CreateUser = ({ navigation }) => {
                 <TextInput
                     mode="outlined"
                     label="Mobile Number"
-                    placeholder="+639154283142"
+                    placeholder="09154283142"
                     value={form.mobile_number}
                     onChangeText={e => {
                         setForm({

@@ -19,7 +19,9 @@ const initialState = {
     users: [],
     user: user,
     loading: false,
-    error: null
+    error: null,
+    status: '',
+    message: ''
 }
 
 export const fetchUsers = createAsyncThunk('users/fetch', async() => {
@@ -62,9 +64,9 @@ export const storeUser = createAsyncThunk('user/store', async (payload) => {
     }
 });
 
-export const updateUser = createAsyncThunk('user/update', async (id, payload) => {
+export const updateUser = createAsyncThunk('user/update', async (user) => {
     try {
-        const response = await axios.put(API_URL + `/users/update/${id}`, payload);
+        const response = await axios.put(API_URL + `/users/update/${user.id}`, user);
 
         return response.data;
     } catch (error) {
@@ -122,10 +124,16 @@ const usersSlice = createSlice({
             state.loading = true;
         });
         builder.addCase(storeUser.fulfilled, (state, action) => {
+            const { status, message } = action.payload;
+
             state.loading = false;
+            state.status = status;
+            state.message = message;
         });
         builder.addCase(storeUser.rejected, (state, action) => {
             state.loading = false;
+            state.status = '';
+            state.message = '';
             state.error = action.error.message;
         });
 
@@ -133,10 +141,16 @@ const usersSlice = createSlice({
             state.loading = true;
         });
         builder.addCase(updateUser.fulfilled, (state, action) => {
+            const { status, message } = action.payload;
+
             state.loading = false;
+            state.status = status;
+            state.message = message;
         });
         builder.addCase(updateUser.rejected, (state, action) => {
             state.loading = false;
+            state.status = '';
+            state.message = '';
             state.error = action.error.message;
         });
 
@@ -144,13 +158,21 @@ const usersSlice = createSlice({
             state.loading = true;
         });
         builder.addCase(deleteUser.fulfilled, (state, action) => {
+            const { status, message } = action.payload;
+
             state.loading = false;
+            state.status = status;
+            state.message = message;
         });
         builder.addCase(deleteUser.rejected, (state, action) => {
             state.loading = false;
+            state.status = '';
+            state.message = '';
             state.error = action.error.message;
         });
     }
 });
+
+export const { setUserForm } = usersSlice.actions;
 
 export default usersSlice.reducer;

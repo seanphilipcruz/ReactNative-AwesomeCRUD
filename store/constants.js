@@ -14,12 +14,12 @@ export const validateUserForm = (form, setErrors, setFormValidity) => {
         errors.email = 'Email is invalid';
     }
 
-    if (form.mobile_number.length > 13 || !/\+63+[0-9]+/.test(form.mobile_number)) {
-        errors.mobile_number = 'Invalid mobile number'
+    if (form.mobile_number.length > 11 || !/[0-9]+/.test(form.mobile_number)) {
+        errors.mobile_number = 'Invalid mobile number';
     }
 
     if (!form.designation_id) {
-        errors.designation = 'Designation is required'
+        errors.designation = 'Designation is required';
     }
 
     setErrors(errors);

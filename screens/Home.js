@@ -1,8 +1,8 @@
 import { useDispatch, useSelector } from "react-redux";
-import { ScrollView, StyleSheet, View } from "react-native";
-import {Button, Card, Text} from "react-native-paper";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import {ActivityIndicator, Avatar, Button, Card, IconButton, Text, TouchableRipple} from "react-native-paper";
 import React, { useEffect } from "react";
-import { fetchUsers } from "../store/users/reducers";
+import {deleteUser, fetchUsers, fetchUser} from "../store/users/reducers";
 import {fetchDesignations} from "../store/designations/reducers";
 
 const HomeScreen = ({ navigation }) => {
@@ -12,15 +12,13 @@ const HomeScreen = ({ navigation }) => {
     useEffect(() => {
         dispatch(fetchUsers());
         dispatch(fetchDesignations());
-    },[dispatch]);
+    },[dispatch, navigation]);
 
-    const handleDelete = async (id) => {
+    const handleRefresh = () => {
         try {
-            // await deleteUserService(id);
-
-            // dispatch(deleteUser(id));
+            dispatch(fetchUsers());
         } catch (error) {
-            console.error("Error deleting data: ", error);
+            Alert.alert("Error occurred", "There was an error loading the users: " + error);
         }
     }
 
@@ -29,59 +27,102 @@ const HomeScreen = ({ navigation }) => {
     }
 
     const handleEdit = (id) => {
+        dispatch(fetchUser(id));
+
         navigation.navigate("EditUser", { id: id });
     }
 
-    return (
-        <ScrollView style={styles.container}>
-            <View style={styles.flexRight}>
-                <Button icon="plus" style={styles.buttons} mode="contained" onPress={handleAdd}>Add new user</Button>
-            </View>
-            {
-                loading ? (
-                    <Text style={styles.text}>Loading Users ...</Text>
-                ) : error ? (
-                    <Text style={styles.text}>Error Occurred: {error}</Text>
-                ) :  (
-                    <View>
-                        {
-                            users.map((item, index) => (
-                                <Card key={index} style={styles.card}>
-                                    <Card.Title title={item.name} />
-                                    <Card.Actions>
-                                        <Button icon="account-edit" style={styles.buttons} mode="contained" onPress={() => handleEdit(item.id)}>Edit</Button>
-                                        <Button icon="delete" style={styles.buttons} mode="contained" onPress={() => handleDelete(item.id)}>Delete</Button>
-                                    </Card.Actions>
-                                </Card>
-                            ))
-                        }
-                    </View>
-                )
-            }
-        </ScrollView>
-    )
+    const handleDelete = (id) => {
+        try {
+            Alert.alert("Are you sure to delete the user's data?", "This action is irreversible", [
+                {
+                    text: 'Yes',
+                    onPress: () => {
+                        dispatch(deleteUser(id));
+                    }
+                },
+                {
+                    text: 'No',
+                    onPress: () => {},
+                    style: 'cancel'
+                }
+            ]);
+        } catch (error) {
+            Alert.alert("Error occurred", "There was an error deleting the user data: " + error);
+        }
+    }
+
+    const cardLeftContent = () => {
+        return (
+            <Avatar.Icon icon="account" />
+        )
+    }
+
+    if (loading) {
+        return (
+            <ActivityIndicator animating={true} style={styles.activityIndicator} size="large" />
+        )
+    } else {
+        return (
+            <ScrollView style={styles.container}>
+                <View style={styles.flexRight}>
+                    <IconButton icon="plus" mode="contained" onPress={handleAdd} />
+                    <IconButton icon="refresh" mode="contained" onPress={handleRefresh} />
+                </View>
+
+                {
+                    users.map((item, index) => (
+                        <Card key={index} style={styles.card}>
+                            <Card.Title title={item.name} subtitle={item.designation.name} right={cardLeftContent} style={styles.cardTitle} />
+                            <Card.Actions>
+                                <Button icon="account-edit" style={styles.buttons} mode="contained" onPress={() => handleEdit(item.id)}>Edit</Button>
+                                <Button icon="delete" style={styles.buttons} mode="contained" onPress={() => handleDelete(item.id)}>Delete</Button>
+                            </Card.Actions>
+                        </Card>
+                    ))
+                }
+            </ScrollView>
+        )
+    }
 }
 
 const styles = StyleSheet.create({
+    activityIndicator: {
+        margin: 15,
+        padding: 15
+    },
+
     card: {
-        marginVertical: 25
+        padding: 5,
+        margin: 15
+    },
+
+    cardTitle: {
+        margin: 15,
+        padding: 10
+    },
+
+    cardContent: {
+        padding: 20
     },
 
     row: {
         display: "flex"
     },
 
-    column: {
-        flex: 1
-    },
-
     text: {
         marginTop: 20,
+        padding: 15,
         textAlign: "center",
     },
 
     flexRight: {
-        alignSelf: "flex-end",
+        flexDirection: 'row-reverse',
+        paddingVertical: 20,
+    },
+
+    iconButtons: {
+        width: 55
     },
 
     buttons: {
